@@ -1,7 +1,5 @@
 import { Box, Divider, Heading, Text, useColorModeValue } from "@chakra-ui/react";
-import Footer from "../components/Footer";
 import ColorModeButton from "../components/ColorModeButton";
-import { motion } from "framer-motion";
 import Image from "next/image";
 import MyBox from "../components/MyBox";
 import Container from "../components/Container";
