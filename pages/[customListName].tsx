@@ -38,7 +38,7 @@ const List = () => {
           </Link>
         </NextLink>
         <HeaderTwo />
-        <Card />
+        <Card customListName={customListName} />
       </Container>
     </>
   );
