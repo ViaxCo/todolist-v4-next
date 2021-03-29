@@ -1,9 +1,12 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextApiResponse } from "next";
 import _startCase from "lodash/startCase";
 import connectDB from "../../config/connectDB";
-import { Item, List } from "../../models";
+import { Item, List, User } from "../../models";
 import errorHandler from "../../utils/errorHandler";
 import badMethodHandler from "../../utils/badMethodHandler";
+import withSession from "../../utils/session";
+import { ExtendedRequest } from ".";
+import getUser from "../../utils/getUser";
 
 // Original task items
 const item1 = new Item({
@@ -29,7 +32,7 @@ const item5 = new Item({
 
 const defaultItems = [item1, item2, item3, item4, item5];
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default withSession(async (req: ExtendedRequest, res: NextApiResponse) => {
   await connectDB();
 
   const {
@@ -40,19 +43,45 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const customListName = _startCase(req.query.customListName as string);
 
   switch (method) {
+    // GET /api/:customListName
     case "GET":
+      const newList = new List({
+        name: customListName,
+        items: defaultItems,
+      });
       try {
-        const foundList = await List.findOne({ name: customListName });
-        if (foundList) {
+        let userExists = req.session.get("user");
+        if (!userExists) {
+          const newUser = await User.create({
+            lists: [{ ...newList }],
+          });
+          userExists = req.session.set("user", { id: newUser.id });
+          await req.session.save();
+
+          return res.status(201).json({
+            listTitle: newList.name,
+            items: newList.items,
+          });
+        }
+        // Find a user that has a list with the customListName
+        const user = await User.findOne(
+          { _id: userExists.id, "lists.name": customListName },
+          // Return the user but only return it with one list (the list with customListName)
+          { "lists.$": 1 }
+        );
+        if (user) {
+          // If user with the customListName exists
+          const foundList = user.lists[0];
           return res.status(200).json({
             listTitle: foundList.name,
             items: foundList.items,
           });
         } else {
-          const newList = await List.create({
-            name: customListName,
-            items: defaultItems,
-          });
+          // If user with customListName doesn't exist
+          await User.findOneAndUpdate(
+            { _id: userExists.id },
+            { $push: { lists: { ...newList } } }
+          );
           return res.status(201).json({
             listTitle: newList.name,
             items: newList.items,
@@ -61,6 +90,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       } catch (err) {
         return errorHandler(err, res);
       }
+    // POST /api/:customListName
     case "POST":
       const { text } = req.body;
       const item = new Item({
@@ -68,30 +98,57 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         completed: false,
       });
       try {
-        await List.findOneAndUpdate({ name: customListName }, { $push: { items: { ...item } } });
+        const userExists = getUser(req.session);
+        if (!userExists) return res.status(404).json("No user found");
+        // Find the current user, the current list, and push the new item into its items array
+        await User.findOneAndUpdate(
+          { _id: userExists.id, "lists.name": customListName },
+          { $push: { "lists.$.items": item } }
+        );
         return res.status(201).json({
           item,
         });
       } catch (err) {
         return errorHandler(err, res);
       }
+    // PATCH /api/:customListName?id=:id
     case "PATCH":
       const { completed } = req.body;
       try {
-        const newList = await List.findOneAndUpdate(
-          { name: customListName, "items._id": id },
-          { "items.$.completed": completed }
+        const userExists = getUser(req.session);
+        if (!userExists) return res.status(404).json("No user found");
+        await User.findOneAndUpdate(
+          { _id: userExists.id },
+          { $set: { "lists.$[currentList].items.$[currentItem].completed": completed } },
+          {
+            arrayFilters: [
+              { "currentList.name": customListName },
+              { "currentItem._id": id },
+            ],
+          }
         );
-        if (!newList) return res.status(404).json(`List ${customListName} Not found`);
+        const user = await User.findOne(
+          { _id: userExists.id, "lists.name": customListName },
+          { "lists.$": 1 }
+        );
+        if (!user) return res.status(404).json("No user found");
+        const newList = user.lists[0];
         return res.status(200).json({
           items: newList.items,
         });
       } catch (err) {
         return errorHandler(err, res);
       }
+    // DELETE /api/:customListName?id=:id
     case "DELETE":
       try {
-        await List.findOneAndUpdate({ name: customListName }, { $pull: { items: { _id: id } } });
+        const userExists = getUser(req.session);
+        if (!userExists) return res.status(404).json("No user found");
+        await User.findOneAndUpdate(
+          { _id: userExists.id, "lists.name": customListName },
+          // @ts-ignore
+          { $pull: { "lists.$.items": { _id: id } } }
+        );
         return res.status(200).json({
           success: true,
         });
@@ -101,4 +158,4 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     default:
       badMethodHandler(method, res, ["GET", "POST", "PATCH", "DELETE"]);
   }
-};
+});
