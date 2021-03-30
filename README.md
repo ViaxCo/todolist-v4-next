@@ -1,8 +1,10 @@
 # todolist-v4-next
 
-This app lets you create various todo lists with their individual items, built using Next JS and Redux.
+This app lets you create various todo lists with their individual items, built using Next JS and [SWR](https://swr.vercel.app/).
 
-This app is a fork of [todolist-v3-react](https://github.com/ViaxCo/todolist-v3-react).
+This app is a fork of [todolist-v4-react](https://github.com/ViaxCo/todolist-v4-react).
+
+The `redux` branch contains the exact project built with Redux.
 
 ## How to use
 
@@ -22,6 +24,7 @@ Create a `.env.local` file for this environment variable:
 
 ```
 MONGO_URI=
+SECRET=
 ```
 
 Run the dev server:

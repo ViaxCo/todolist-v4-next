@@ -1,11 +1,3 @@
-import { useAppDispatch } from "../redux/hooks";
-import { deleteList, ListType } from "../redux/features/lists/listsSlice";
-import {
-  deleteItem,
-  ItemType,
-  setListIsLoading,
-  toggleItemCompleted,
-} from "../redux/features/items/itemsSlice";
 import { DeleteIcon } from "@chakra-ui/icons";
 import {
   Box,
@@ -21,6 +13,9 @@ import {
 import { HTMLMotionProps, motion } from "framer-motion";
 import { useState } from "react";
 import NextLink from "next/link";
+import { ItemType, ListType } from "../types";
+import { mutate } from "swr";
+import axios from "axios";
 
 type Props = {
   list?: ListType;
@@ -34,17 +29,11 @@ type MotionFlexProps = Merge<FlexProps, HTMLMotionProps<"div">>;
 const MotionFlex: React.FC<MotionFlexProps> = motion(Flex);
 
 const SmallCard = ({ list, item, i, customListName }: Props) => {
-  const dispatch = useAppDispatch();
   const [checked, setChecked] = useState(item?.completed);
 
   const List = () => (
     <NextLink href={{ pathname: `/${list?.name}` }} passHref>
-      <Link
-        flex="1"
-        textAlign="center"
-        borderRadius="5px"
-        onClick={() => dispatch(setListIsLoading(true))}
-      >
+      <Link flex="1" textAlign="center" borderRadius="5px">
         <Text
           p="20px"
           fontSize="1.2rem"
@@ -69,7 +58,11 @@ const SmallCard = ({ list, item, i, customListName }: Props) => {
       isChecked={checked}
       onChange={() => {
         setChecked(!checked);
-        dispatch(toggleItemCompleted(customListName!, item?._id!, i, !checked));
+        mutate(`/api/${customListName}`, async () => {
+          await axios.patch(`/api/${customListName}?id=${item?._id}`, {
+            completed: !checked,
+          });
+        });
       }}
       textDecoration={checked ? "line-through" : undefined}
     >
@@ -128,8 +121,12 @@ const SmallCard = ({ list, item, i, customListName }: Props) => {
           colorScheme="red"
           onClick={() =>
             list
-              ? dispatch(deleteList(list._id!))
-              : dispatch(deleteItem(customListName!, item?._id!))
+              ? mutate("/api", async () => {
+                  await axios.delete(`/api?id=${list?._id}`);
+                })
+              : mutate(`/api/${customListName}`, async () => {
+                  await axios.delete(`/api/${customListName}?id=${item?._id}`);
+                })
           }
           icon={<DeleteIcon />}
         />

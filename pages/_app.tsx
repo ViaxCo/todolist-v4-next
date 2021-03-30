@@ -1,12 +1,37 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { GoogleFonts } from "next-google-fonts";
-import { Provider } from "react-redux";
-import store from "../redux/store";
-import { ChakraProvider } from "@chakra-ui/react";
+import { SWRConfig } from "swr";
+import { ChakraProvider, useToast } from "@chakra-ui/react";
 import theme from "../theme";
 // Remove blue outline from buttons and links
 import "focus-visible/dist/focus-visible";
+import axios from "axios";
+import { ReactNode } from "react";
+
+const SwrWrapper = ({ children }: { children: ReactNode }) => {
+  const toast = useToast();
+  const onError = (error: any, key: string) => {
+    if (error.status !== 403 && error.status !== 404) {
+      toast({
+        title: "An error occurred",
+        status: "error",
+        duration: 2500,
+        isClosable: true,
+        position: "top",
+      });
+    }
+  };
+  const fetcher = async (url: string) => {
+    const res = await axios.get(url);
+    return res.data;
+  };
+  return (
+    <SWRConfig value={{ onError, fetcher, revalidateOnFocus: false }}>
+      {children}
+    </SWRConfig>
+  );
+};
 
 const MyApp = ({ Component, pageProps }: AppProps) => {
   return (
@@ -19,9 +44,9 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
         <title>Todo List</title>
       </Head>
       <ChakraProvider theme={theme}>
-        <Provider store={store}>
+        <SwrWrapper>
           <Component {...pageProps} />
-        </Provider>
+        </SwrWrapper>
       </ChakraProvider>
     </>
   );

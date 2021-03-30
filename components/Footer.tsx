@@ -1,12 +1,9 @@
-import { useAppDispatch } from "../redux/hooks";
-import { setHomeIsLoading } from "../redux/features/lists/listsSlice";
 import { Link } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
 import MyBox from "./MyBox";
 
 const Footer = () => {
-  const dispatch = useAppDispatch();
   const { pathname } = useRouter();
   return (
     <MyBox
@@ -26,9 +23,7 @@ const Footer = () => {
         </NextLink>
       ) : (
         <NextLink href="/about" passHref>
-          <Link textDecor="underline" onClick={() => dispatch(setHomeIsLoading(true))}>
-            ViaxCo
-          </Link>
+          <Link textDecor="underline">ViaxCo</Link>
         </NextLink>
       )}
     </MyBox>

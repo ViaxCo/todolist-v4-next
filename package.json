@@ -12,7 +12,6 @@
     "@chakra-ui/react": "^1.4.1",
     "@emotion/react": "^11.1.5",
     "@emotion/styled": "^11.1.5",
-    "@reduxjs/toolkit": "^1.5.0",
     "axios": "^0.21.1",
     "focus-visible": "^5.2.0",
     "framer-motion": "^4.0.0",
@@ -23,12 +22,11 @@
     "next-iron-session": "^4.1.12",
     "react": "17.0.1",
     "react-dom": "17.0.1",
-    "react-redux": "^7.2.2"
+    "swr": "^0.5.4"
   },
   "devDependencies": {
     "@types/node": "^14.14.35",
     "@types/react": "^17.0.3",
-    "@types/react-redux": "^7.1.16",
     "typescript": "^4.2.3"
   }
 }

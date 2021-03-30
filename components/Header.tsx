@@ -1,14 +1,20 @@
-import { useAppSelector } from "../redux/hooks";
 import { Heading } from "@chakra-ui/react";
 import { useRouter } from "next/router";
+import { getDay } from "../utils/date";
 import MyBox from "./MyBox";
+import { ItemData } from "../types";
+import useItems from "../hooks/useItems";
 
-const Header = () => {
-  const today = useAppSelector(state => state.lists.today);
-  const listTitle = useAppSelector(state => state.items.listTitle);
-  const listIsLoading = useAppSelector(state => state.items.listIsLoading);
+type Props = {
+  customListName?: string;
+};
 
+const Header = ({ customListName }: Props) => {
+  const today = getDay();
   const { pathname } = useRouter();
+
+  const { data: itemData } = useItems<ItemData>(customListName);
+  const listTitle = itemData?.listTitle;
 
   return (
     <MyBox
@@ -17,7 +23,7 @@ const Header = () => {
       textAlign="center"
     >
       <Heading as="h1" color="white" p="10px">
-        {pathname === "/" ? today : listIsLoading ? today : listTitle}
+        {pathname === "/" ? today : listTitle ?? today}
       </Heading>
     </MyBox>
   );

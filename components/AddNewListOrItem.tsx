@@ -1,6 +1,3 @@
-import { useAppDispatch } from "../redux/hooks";
-import { addItem, setListIsLoading } from "../redux/features/items/itemsSlice";
-import { addList } from "../redux/features/lists/listsSlice";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { AddIcon } from "@chakra-ui/icons";
 import {
@@ -11,6 +8,9 @@ import {
   useColorModeValue,
   Spinner,
 } from "@chakra-ui/react";
+import { useRouter } from "next/router";
+import { mutate } from "swr";
+import axios from "axios";
 
 type Props = {
   customListName?: string;
@@ -19,20 +19,18 @@ type Props = {
 const AddNewListOrItem = ({ customListName }: Props) => {
   const [value, setValue] = useState("");
   const [adding, setAdding] = useState(false);
-  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     // If on the home page
-    if (!customListName) {
-      dispatch(setListIsLoading(true));
-      dispatch(addList(value));
-    }
-    // If on the individual lists page
+    if (!customListName) router.push(`/${value}`);
     if (customListName) {
       setAdding(true);
       setValue("");
-      await dispatch(addItem({ customListName, name: value }));
+      await mutate(`/api/${customListName}`, async () => {
+        await axios.post(`/api/${customListName}`, { text: value });
+      });
       setAdding(false);
     }
   };

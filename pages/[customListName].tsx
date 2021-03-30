@@ -1,40 +1,42 @@
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "../redux/hooks";
-import { getItems } from "../redux/features/items/itemsSlice";
-import { setHomeIsLoading } from "../redux/features/lists/listsSlice";
-import Header from "../components/Header";
-import HeaderTwo from "../components/HeaderTwo";
-import Card from "../components/Card";
+import axios from "axios";
+import { mutate } from "swr";
 import { Link } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import NextLink from "next/link";
 import Head from "next/head";
+import Header from "../components/Header";
+import HeaderTwo from "../components/HeaderTwo";
+import Card from "../components/Card";
 import Container from "../components/Container";
+import { ItemData } from "../types";
+import { useEffect } from "react";
+import useItems from "../hooks/useItems";
 
 const List = () => {
   // Get the url parameter (/:customListName) value
   const { query } = useRouter();
-  const customListName = query.customListName as string;
+  const customListName = query.customListName as string | undefined;
 
-  const dispatch = useAppDispatch();
-  const { listIsLoading, listTitle } = useAppSelector(state => state.items);
+  const { data: itemData } = useItems<ItemData>(customListName);
+  const listTitle = itemData?.listTitle;
 
   useEffect(() => {
-    if (customListName) dispatch(getItems(customListName));
-  }, [dispatch, customListName]);
+    mutate(
+      "/api",
+      axios.get("/api").then(res => res.data)
+    );
+  }, []);
+
   return (
     <>
       <Head>
-        <title>{listIsLoading ? "Todo List" : listTitle}</title>
+        <title>{listTitle ?? "Todo List"}</title>
       </Head>
 
       <Container>
         <NextLink href="/" passHref>
-          <Link
-            style={{ textDecoration: "none" }}
-            onClick={() => dispatch(setHomeIsLoading(true))}
-          >
-            <Header />
+          <Link style={{ textDecoration: "none" }}>
+            <Header customListName={customListName} />
           </Link>
         </NextLink>
         <HeaderTwo />

@@ -1,21 +1,23 @@
 import { useColorModeValue } from "@chakra-ui/react";
-import { useAppSelector } from "../redux/hooks";
+import { useRouter } from "next/router";
 import AddNewListOrItem from "./AddNewListOrItem";
 import { AnimatePresence } from "framer-motion";
-import { useRouter } from "next/router";
 import MyBox from "./MyBox";
 import SmallCard from "./SmallCard";
 import Spinner from "./Spinner";
+import { ItemData, ListData } from "../types";
+import useLists from "../hooks/useLists";
+import useItems from "../hooks/useItems";
 
 type Props = {
   customListName?: string;
 };
 
 const Card = ({ customListName }: Props) => {
-  const lists = useAppSelector(state => state.lists.lists);
-  const items = useAppSelector(state => state.items.items);
-  const homeIsLoading = useAppSelector(state => state.lists.homeIsLoading);
-  const listIsLoading = useAppSelector(state => state.items.listIsLoading);
+  const { data: listData } = useLists<ListData>();
+  const { data: itemData } = useItems<ItemData>(customListName);
+  const lists = listData?.lists;
+  const items = itemData?.items;
 
   const { pathname } = useRouter();
   // Custom css value depending on the color mode
@@ -27,20 +29,20 @@ const Card = ({ customListName }: Props) => {
   return (
     <MyBox boxShadow={boxShadow} bg={useColorModeValue("white", "viaxco.500")}>
       {pathname === "/" ? (
-        homeIsLoading ? (
+        !listData ? (
           <Spinner />
         ) : (
           <AnimatePresence>
-            {lists.map((list, i) => (
+            {lists?.map((list, i) => (
               <SmallCard key={list._id} list={list} i={i} />
             ))}
           </AnimatePresence>
         )
-      ) : listIsLoading ? (
+      ) : !itemData ? (
         <Spinner />
       ) : (
         <AnimatePresence>
-          {items.map((item, i) => (
+          {items?.map((item, i) => (
             <SmallCard key={item._id} item={item} i={i} customListName={customListName} />
           ))}
         </AnimatePresence>
